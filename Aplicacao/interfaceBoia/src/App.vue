@@ -1,7 +1,55 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import LineChart from "./components/LineChart.vue";
 import DataTable from "./components/DataTable.vue";
+
+const mediaTemperatura = ref([]);
+const mediaPorMinuto = ref([]);
+
+async function fetchData() {
+  try {
+    const response = await fetch("http://localhost:5000/api/temperaturas");
+    const data = await response.json();
+    mediaTemperatura.value = data;
+    console.log(mediaTemperatura.value);
+
+    // Update lineChartData after fetching data
+    lineChartData.value = {
+      labels: mediaTemperatura.value.map((item) => item.interval),
+      datasets: [
+        {
+          label: "Média de Temperatura",
+          data: mediaTemperatura.value.map((item) => item.media_temperatura),
+          fill: false,
+          borderColor: "rgb(75, 192, 192)",
+          tension: 0.1,
+        },
+      ],
+    };
+
+    // Calculate average per minute
+    calculateAveragePerMinute();
+  } catch (error) {
+    console.error("Failed to fetch data:", error);
+  }
+}
+
+function calculateAveragePerMinute() {
+  const groupedData = {};
+  mediaTemperatura.value.forEach((item) => {
+    const minute = item.interval.split(":")[1]; // Assuming interval is in HH:MM format
+    if (!groupedData[minute]) {
+      groupedData[minute] = [];
+    }
+    groupedData[minute].push(item.media_temperatura);
+  });
+
+  mediaPorMinuto.value = Object.keys(groupedData).map((minute) => {
+    const temperatures = groupedData[minute];
+    const average = temperatures.reduce((sum, temp) => sum + temp, 0) / temperatures.length;
+    return { Minute: minute, AverageTemperature: average.toFixed(2) };
+  });
+}
 
 // Dados e opções para o gráfico de linha
 const lineChartData = ref(null);
@@ -24,30 +72,16 @@ const lineChartOptions = ref({
 });
 
 // Dados para a tabela
-const tableColumns = ref(["Nome", "Idade", "Cidade"]);
+const tableColumns = ref(["Minute", "AverageTemperature"]);
 const tableData = ref([]);
 
-// Inicializa os dados do gráfico e da tabela quando o componente é montado
 onMounted(() => {
-  lineChartData.value = {
-    labels: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho"],
-    datasets: [
-      {
-        label: "Vendas",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        borderColor: "rgba(75, 192, 192, 1)",
-        data: [65, 59, 80, 81, 56, 55],
-        fill: true,
-      },
-    ],
-  };
+  fetchData();
+  const intervalId = setInterval(fetchData, 30000); // 30 seconds
 
-  tableData.value = [
-    { Nome: "Ana", Idade: 28, Cidade: "São Paulo" },
-    { Nome: "Bruno", Idade: 32, Cidade: "Rio de Janeiro" },
-    { Nome: "Carla", Idade: 25, Cidade: "Belo Horizonte" },
-    { Nome: "Diego", Idade: 35, Cidade: "Curitiba" },
-  ];
+  onUnmounted(() => {
+    clearInterval(intervalId);
+  });
 });
 </script>
 
@@ -60,7 +94,7 @@ onMounted(() => {
     <!-- Gráfico de Linha -->
     <section class="mb-8">
       <h2 class="text-xl font-semibold text-gray-700 mb-4">
-        Gráfico de Vendas
+        Temperatura por segundo
       </h2>
       <div class="bg-white p-4 rounded-lg shadow">
         <LineChart
@@ -74,10 +108,10 @@ onMounted(() => {
     <!-- Tabela de Dados -->
     <section>
       <h2 class="text-xl font-semibold text-gray-700 mb-4">
-        Dados dos Clientes
+        Média de Temperatura por Minuto
       </h2>
       <div class="bg-white p-4 rounded-lg shadow overflow-x-auto">
-        <DataTable :columns="tableColumns" :data="tableData" />
+        <DataTable :columns="tableColumns" :data="mediaPorMinuto" />
       </div>
     </section>
   </div>
