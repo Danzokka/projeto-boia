@@ -31,9 +31,10 @@ try:
             try:
                 temperatura = float(data.split('=')[1].strip())
                 temperaturas.append(temperatura)
+                print(temperatura)
 
                 # Se já tivermos 10 leituras, calcular a média e inserir no banco de dados
-                if len(temperaturas) == 10:
+                if len(temperaturas) == 5:
                     temperatura_media = sum(temperaturas) / len(temperaturas)
                     timestamp = datetime.now().isoformat()
 
@@ -44,7 +45,7 @@ try:
                     ''', (temperatura_media, timestamp))
                     sqlite_connection.commit()
                     
-                    print(f"Média dos últimos 10 valores ({temperatura_media:.2f}°C) registrada no SQLite com timestamp {timestamp}")
+                    print(f"Média dos últimos 5 valores ({temperatura_media:.2f}°C) registrada no SQLite com timestamp {timestamp}")
 
                     # Limpar a lista para as próximas 10 leituras
                     temperaturas = []

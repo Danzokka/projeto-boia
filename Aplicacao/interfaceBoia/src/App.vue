@@ -85,7 +85,7 @@ const tableData = ref([]);
 
 onMounted(() => {
   fetchData();
-  const intervalId = setInterval(fetchData, 30000);
+  const intervalId = setInterval(fetchData, 10000);
 
   onUnmounted(() => {
     clearInterval(intervalId);
