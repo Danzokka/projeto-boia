@@ -11,21 +11,21 @@ app.use(cors());
 // Conectar ao banco de dados SQLite
 const db = new sqlite3('temperaturas.db');
 
-// Função auxiliar para arredondar datas para o intervalo de 30 segundos
-function roundTo30Seconds(date) {
+// Função auxiliar para arredondar datas para o intervalo de 10 segundos
+function roundTo10Seconds(date) {
   const seconds = date.getSeconds();
-  const roundedSeconds = seconds < 30 ? 0 : 30;
+  const roundedSeconds = seconds < 10 ? 0 : 10;
   return new Date(date.setSeconds(roundedSeconds, 0));
 }
 
-// Rota para obter as médias de temperatura a cada 30 segundos do dia atual
+// Rota para obter as médias de temperatura a cada 10 segundos do dia atual
 app.get('/api/temperaturas', (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0]; // Data atual no formato YYYY-MM-DD
     const rows = db.prepare(`
       SELECT
         strftime('%Y-%m-%d %H:%M', timestamp) || ':' ||
-        printf('%02d', (strftime('%S', timestamp) / 30) * 30) AS interval,
+        printf('%02d', (strftime('%S', timestamp) / 10) * 10) AS interval,
         AVG(temperatura_media) AS media_temperatura
       FROM temperaturas
       WHERE date(timestamp) = ?
